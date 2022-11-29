@@ -46,4 +46,12 @@ void LOG_WARN(const std::string &msg) {
   log("WARN", msg);
 }
 
+void LOG_EXPORT(const std::string &msg) {
+  std::istringstream m(msg);
+  std::string line;
+  while (std::getline(m, line)) {
+    log("EXPORT", line + "\n");
+  }
+}
+
 } // namespace qsym

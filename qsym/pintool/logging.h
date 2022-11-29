@@ -33,6 +33,7 @@ void LOG_FATAL(const std::string &msg);
 void LOG_INFO(const std::string &msg);
 void LOG_STAT(const std::string &msg);
 void LOG_WARN(const std::string &msg);
+void LOG_EXPORT(const std::string &msg);
 
 } // namespace qsym
 
