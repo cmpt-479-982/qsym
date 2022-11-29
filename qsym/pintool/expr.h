@@ -14,6 +14,7 @@
 #include "common.h"
 #include "dependency.h"
 #include "third_party/llvm/range.h"
+#include "logging.h"
 
 // XXX: need to change into non-global variable?
 namespace qsym {
@@ -525,7 +526,12 @@ protected:
   z3::expr toZ3ExprRecursively(bool verbose) override {
     z3::symbol symbol = context_.int_symbol(index_);
     z3::sort sort = context_.bv_sort(8);
-    return context_.constant(symbol, sort);
+    LOG_EXPORT("CONST");
+    auto constant = context_.constant(symbol, sort);
+    LOG_EXPORT(std::to_string(index_));
+    // LOG_EXPORT(constant.to_string());
+    LOG_EXPORT("END_CONST");
+    return constant;
   }
 
   void hashAux(XXH32_state_t* state) override {
