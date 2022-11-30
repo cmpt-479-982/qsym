@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <set>
 #include <byteswap.h>
 #include <iostream>
@@ -114,7 +115,7 @@ void Solver::push() {
 }
 
 void Solver::reset() {
-  LOG_INFO("Reset was called on the solver.\n");
+  LOG_DEBUG("Reset was called on the solver.\n");
   LOG_EXPORT("RESET\n");
   solver_.reset();
 }
@@ -129,8 +130,13 @@ void Solver::add(z3::expr expr) {
   
   expr = expr.simplify();
   solver_.add(expr);
+  
   LOG_EXPORT("ADD");
-  LOG_EXPORT(expr.to_string());
+  auto expr_str = expr.to_string();
+  // auto assertions = solver_.assertions();
+  // LOG_EXPORT((assertions[assertions.size() - 1]).to_string());
+  std::replace(expr_str.begin(), expr_str.end(), '\n', ' ');
+  LOG_EXPORT(expr_str);
   LOG_EXPORT("END_ADD");
 }
 
@@ -140,9 +146,10 @@ z3::check_result Solver::check() {
   LOG_STAT(
       "SMT: { \"solving_time\": " + decstr(solving_time_) + ", "
       + "\"total_time\": " + decstr(before - start_time_) + " }\n");
-  LOG_EXPORT("SMT\n");
-  LOG_EXPORT(solver_.to_smt2() + "\n");
-  LOG_EXPORT("END_SMT\n");
+  
+  LOG_DEBUG("SMT\n");
+  LOG_DEBUG(solver_.to_smt2() + "\n");
+  LOG_DEBUG("END_SMT\n");
   LOG_EXPORT("CHECK\n");
   try {
     res = solver_.check();
@@ -160,7 +167,7 @@ z3::check_result Solver::check() {
 }
 
 bool Solver::checkAndSave(const std::string& postfix) {
-  LOG_INFO("In checkAndSave\n");
+  LOG_DEBUG("In checkAndSave\n");
   if (check() == z3::sat) {
     saveValues(postfix);
     return true;
@@ -172,7 +179,8 @@ bool Solver::checkAndSave(const std::string& postfix) {
 }
 
 void Solver::addJcc(ExprRef e, bool taken, ADDRINT pc) {
-  LOG_INFO("In addJcc\n");
+  LOG_DEBUG("In addJcc\n");
+
   LOG_EXPORT("BRANCH\n");
   LOG_EXPORT(std::to_string(pc) + " " + (taken ? "T" : "N") + "\n");
   // Save the last instruction pointer for debugging
@@ -201,6 +209,8 @@ void Solver::addJcc(ExprRef e, bool taken, ADDRINT pc) {
 
   if (is_interesting)
     negatePath(e, taken);
+  else
+    LOG_DEBUG("Not interesting.\n");
   addConstraint(e, taken, is_interesting);
 }
 
@@ -251,7 +261,7 @@ void Solver::addValue(ExprRef e, llvm::APInt val) {
 }
 
 void Solver::solveAll(ExprRef e, llvm::APInt val) {
-  LOG_INFO("In solveAll\n");
+  LOG_DEBUG("In solveAll\n");
   if (last_interested_) {
     std::string postfix = "";
     ExprRef expr_val = g_expr_builder->createConstant(val, e->bits());
@@ -401,7 +411,7 @@ z3::expr Solver::getMaxValue(z3::expr& z3_expr) {
 }
 
 void Solver::addToSolver(ExprRef e, bool taken) {
-  LOG_INFO("In addToSolver\n");
+  LOG_DEBUG("In addToSolver\n");
   e->simplify();
   if (!taken)
     e = g_expr_builder->createLNot(e);
@@ -409,7 +419,7 @@ void Solver::addToSolver(ExprRef e, bool taken) {
 }
 
 void Solver::syncConstraints(ExprRef e) {
-  LOG_INFO("In syncConstraints\n");
+  LOG_DEBUG("In syncConstraints\n");
   std::set<std::shared_ptr<DependencyTree<Expr>>> forest;
   DependencySet* deps = e->getDependencies();
   
@@ -451,7 +461,7 @@ void Solver::syncConstraints(ExprRef e) {
 }
 
 void Solver::addConstraint(ExprRef e, bool taken, bool is_interesting) {
-  LOG_INFO("In addConstraint\n");
+  LOG_DEBUG("In addConstraint\n");
   if (auto NE = castAs<LNotExpr>(e)) {
     addConstraint(NE->expr(), !taken, is_interesting);
     return;
@@ -545,9 +555,9 @@ bool Solver::isInterestingJcc(ExprRef rel_expr, bool taken, ADDRINT pc) {
 }
 
 void Solver::negatePath(ExprRef e, bool taken) {
-  LOG_INFO("In negatePath\n");
+  LOG_DEBUG("In negatePath\n");
   reset();
-  LOG_INFO("Path constraints\n");
+  LOG_DEBUG("Path constraints\n");
   syncConstraints(e);
   LOG_EXPORT("BRNEG\n");
   addToSolver(e, !taken);
@@ -561,7 +571,7 @@ void Solver::negatePath(ExprRef e, bool taken) {
 }
 
 void Solver::solveOne(z3::expr z3_expr) {
-  LOG_INFO("In solveOne\n");
+  LOG_DEBUG("In solveOne\n");
 
   push();
   add(z3_expr);
