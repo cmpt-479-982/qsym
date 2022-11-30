@@ -564,6 +564,7 @@ void Solver::negatePath(ExprRef e, bool taken) {
   bool sat = checkAndSave();
   if (!sat) {
     reset();
+    LOG_EXPORT("OPTIMISTIC\n");
     // optimistic solving
     addToSolver(e, !taken);
     checkAndSave("optimistic");
